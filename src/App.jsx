@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import './App.css';
 import { generateLessonContent } from './services/geminiService';
 
-// Helper to parse lesson text into sections
+
 function parseLessonSections(text) {
   // Simple regex-based parsing for demonstration
   const titleMatch = text.match(/^#+\s*(.*)/m);
@@ -31,6 +31,7 @@ function App() {
   const [sectionOutcomes, setSectionOutcomes] = useState('');
   const [sectionConcepts, setSectionConcepts] = useState('');
   const [sectionActivities, setSectionActivities] = useState('');
+  const [loadingSection, setLoadingSection] = useState('');
 
   // Lesson metadata state
   const [prerequisites, setPrerequisites] = useState('');
@@ -55,6 +56,11 @@ function App() {
       setSectionConcepts(sections.concepts);
       setSectionActivities(sections.activities);
     } catch (error) {
+      if (error.response && error.response.status === 429) {
+        alert('You have reached the request limit for the Gemini API. Please wait and try again later.');
+      } else {
+        alert('Failed to generate lesson content.');
+      }
       setGeneratedContent({ error: 'Failed to generate lesson content.' });
       setSectionTitle('');
       setSectionDescription('');
@@ -81,6 +87,84 @@ function App() {
       return content.error;
     }
     return '';
+  };
+
+  // Section-specific regeneration
+  const regenerateSection = async (section) => {
+    setLoadingSection(section);
+    let prompt = '';
+    switch (section) {
+      case 'title':
+        prompt = `Return only a single, short lesson title for the topic: ${topic} and lesson: ${lesson}. No heading, no quotes, no extra text, no summary, no newlines.`;
+        break;
+      case 'description':
+        prompt = `Generate ONLY a detailed lesson description for the topic: ${topic} and lesson: ${lesson}. Return only a single paragraph description, no title, no heading, no list, no summary.`;
+        break;
+      case 'outcomes':
+        prompt = `List ONLY well-crafted learning outcomes for a lesson on ${topic} (${lesson}). Return only the list of outcomes as bullet points, no title, no introduction, no summary.`;
+        break;
+      case 'concepts':
+        prompt = `Return only a bullet list of the key concepts and terminology for a lesson on ${topic} (${lesson}). No title, no introduction, no summary, no extra text, no newlines before the first bullet.`;
+        break;
+      case 'activities':
+        prompt = `Return only a bullet list of engaging learning activities and examples for a lesson on ${topic} (${lesson}). No title, no introduction, no summary, no extra text, no newlines before the first bullet.`;
+        break;
+      default:
+        break;
+    }
+    try {
+      const result = await generateLessonContent(topic, prompt);
+      const text = getLessonText(result).trim();
+      // Helper to extract first bullet/numbered list
+      const extractFirstList = (str) => {
+        const lines = str.split('\n');
+        const listLines = [];
+        let inList = false;
+        for (let line of lines) {
+          if (/^\s*([*-]|\d+\.)\s+/.test(line)) {
+            listLines.push(line);
+            inList = true;
+          } else if (inList && line.trim() === '') {
+            break;
+          } else if (inList) {
+            break;
+          }
+        }
+        return listLines.length > 0 ? listLines.join('\n') : str;
+      };
+      // Loosened fallback checks
+      if (section === 'title') {
+        if (text && text.split('\n').length === 1 && text.length > 2) setSectionTitle(text);
+        else alert('Regenerated title does not look like a single-line title. Please try again.');
+      }
+      if (section === 'description') {
+        if (text && text.length > 10) setSectionDescription(text.split('\n\n')[0]);
+        else alert('Regenerated description does not look like a description. Please try again.');
+      }
+      if (section === 'outcomes') {
+        const list = extractFirstList(text);
+        if (list.match(/^[*-]|\d+\./m)) setSectionOutcomes(list);
+        else alert('Regenerated outcomes do not look like a list. Please try again.');
+      }
+      if (section === 'concepts') {
+        const list = extractFirstList(text);
+        if (list.match(/^[*-]|\d+\./m)) setSectionConcepts(list);
+        else alert('Regenerated key concepts do not look like a list. Please try again.');
+      }
+      if (section === 'activities') {
+        const list = extractFirstList(text);
+        if (list.match(/^[*-]|\d+\./m)) setSectionActivities(list);
+        else alert('Regenerated activities do not look like a list. Please try again.');
+      }
+    } catch (error) {
+      if (error.response && error.response.status === 429) {
+        alert('You have reached the request limit for the Gemini API. Please wait and try again later.');
+      } else {
+        alert('Failed to regenerate section.');
+      }
+    } finally {
+      setLoadingSection('');
+    }
   };
 
   // Module creation handlers
@@ -170,23 +254,28 @@ function App() {
             <div style={{ width: '100%', maxWidth: 800, margin: '1em auto', background: '#fff', color: '#222', borderRadius: 8, padding: 16 }}>
               <div style={{ marginBottom: 12 }}>
                 <label><b>Title:</b></label>
-                <textarea value={sectionTitle} onChange={e => setSectionTitle(e.target.value)} rows={2} style={{ width: '100%', borderRadius: 4, padding: 6, fontSize: 16 }} />
+                <textarea value={sectionTitle} onChange={e => setSectionTitle(e.target.value)} rows={2} style={{ width: '80%', borderRadius: 4, padding: 6, fontSize: 16 }} />
+                <button onClick={() => regenerateSection('title')} disabled={loadingSection==='title'} style={{ marginLeft: 8 }}>{loadingSection==='title' ? 'Regenerating...' : 'Regenerate'}</button>
               </div>
               <div style={{ marginBottom: 12 }}>
                 <label><b>Description:</b></label>
-                <textarea value={sectionDescription} onChange={e => setSectionDescription(e.target.value)} rows={3} style={{ width: '100%', borderRadius: 4, padding: 6, fontSize: 16 }} />
+                <textarea value={sectionDescription} onChange={e => setSectionDescription(e.target.value)} rows={3} style={{ width: '80%', borderRadius: 4, padding: 6, fontSize: 16 }} />
+                <button onClick={() => regenerateSection('description')} disabled={loadingSection==='description'} style={{ marginLeft: 8 }}>{loadingSection==='description' ? 'Regenerating...' : 'Regenerate'}</button>
               </div>
               <div style={{ marginBottom: 12 }}>
                 <label><b>Learning Outcomes:</b></label>
-                <textarea value={sectionOutcomes} onChange={e => setSectionOutcomes(e.target.value)} rows={4} style={{ width: '100%', borderRadius: 4, padding: 6, fontSize: 16 }} />
+                <textarea value={sectionOutcomes} onChange={e => setSectionOutcomes(e.target.value)} rows={4} style={{ width: '80%', borderRadius: 4, padding: 6, fontSize: 16 }} />
+                <button onClick={() => regenerateSection('outcomes')} disabled={loadingSection==='outcomes'} style={{ marginLeft: 8 }}>{loadingSection==='outcomes' ? 'Regenerating...' : 'Regenerate'}</button>
               </div>
               <div style={{ marginBottom: 12 }}>
                 <label><b>Key Concepts:</b></label>
-                <textarea value={sectionConcepts} onChange={e => setSectionConcepts(e.target.value)} rows={4} style={{ width: '100%', borderRadius: 4, padding: 6, fontSize: 16 }} />
+                <textarea value={sectionConcepts} onChange={e => setSectionConcepts(e.target.value)} rows={4} style={{ width: '80%', borderRadius: 4, padding: 6, fontSize: 16 }} />
+                <button onClick={() => regenerateSection('concepts')} disabled={loadingSection==='concepts'} style={{ marginLeft: 8 }}>{loadingSection==='concepts' ? 'Regenerating...' : 'Regenerate'}</button>
               </div>
               <div style={{ marginBottom: 12 }}>
                 <label><b>Engaging Activities:</b></label>
-                <textarea value={sectionActivities} onChange={e => setSectionActivities(e.target.value)} rows={4} style={{ width: '100%', borderRadius: 4, padding: 6, fontSize: 16 }} />
+                <textarea value={sectionActivities} onChange={e => setSectionActivities(e.target.value)} rows={4} style={{ width: '80%', borderRadius: 4, padding: 6, fontSize: 16 }} />
+                <button onClick={() => regenerateSection('activities')} disabled={loadingSection==='activities'} style={{ marginLeft: 8 }}>{loadingSection==='activities' ? 'Regenerating...' : 'Regenerate'}</button>
               </div>
             </div>
             <div style={{ marginTop: '1em' }}>
