@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 import './App.css';
 import { generateLessonContent } from './services/geminiService';
 
@@ -254,27 +256,92 @@ function App() {
             <div style={{ width: '100%', maxWidth: 800, margin: '1em auto', background: '#fff', color: '#222', borderRadius: 8, padding: 16 }}>
               <div style={{ marginBottom: 12 }}>
                 <label><b>Title:</b></label>
-                <textarea value={sectionTitle} onChange={e => setSectionTitle(e.target.value)} rows={2} style={{ width: '80%', borderRadius: 4, padding: 6, fontSize: 16 }} />
+                <ReactQuill
+                  value={sectionTitle}
+                  onChange={setSectionTitle}
+                  theme="snow"
+                  style={{ marginBottom: 12, background: '#fff' }}
+                  modules={{
+                    toolbar: [
+                      [{ 'header': [1, 2, false] }],
+                      ['bold', 'italic', 'underline'],
+                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                      ['clean']
+                    ]
+                  }}
+                />
                 <button onClick={() => regenerateSection('title')} disabled={loadingSection==='title'} style={{ marginLeft: 8 }}>{loadingSection==='title' ? 'Regenerating...' : 'Regenerate'}</button>
               </div>
               <div style={{ marginBottom: 12 }}>
                 <label><b>Description:</b></label>
-                <textarea value={sectionDescription} onChange={e => setSectionDescription(e.target.value)} rows={3} style={{ width: '80%', borderRadius: 4, padding: 6, fontSize: 16 }} />
+                <ReactQuill
+                  value={sectionDescription}
+                  onChange={setSectionDescription}
+                  theme="snow"
+                  style={{ marginBottom: 12, background: '#fff' }}
+                  modules={{
+                    toolbar: [
+                      [{ 'header': [1, 2, false] }],
+                      ['bold', 'italic', 'underline'],
+                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                      ['clean']
+                    ]
+                  }}
+                />
                 <button onClick={() => regenerateSection('description')} disabled={loadingSection==='description'} style={{ marginLeft: 8 }}>{loadingSection==='description' ? 'Regenerating...' : 'Regenerate'}</button>
               </div>
               <div style={{ marginBottom: 12 }}>
                 <label><b>Learning Outcomes:</b></label>
-                <textarea value={sectionOutcomes} onChange={e => setSectionOutcomes(e.target.value)} rows={4} style={{ width: '80%', borderRadius: 4, padding: 6, fontSize: 16 }} />
+                <ReactQuill
+                  value={sectionOutcomes}
+                  onChange={setSectionOutcomes}
+                  theme="snow"
+                  style={{ marginBottom: 12, background: '#fff' }}
+                  modules={{
+                    toolbar: [
+                      [{ 'header': [1, 2, false] }],
+                      ['bold', 'italic', 'underline'],
+                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                      ['clean']
+                    ]
+                  }}
+                />
                 <button onClick={() => regenerateSection('outcomes')} disabled={loadingSection==='outcomes'} style={{ marginLeft: 8 }}>{loadingSection==='outcomes' ? 'Regenerating...' : 'Regenerate'}</button>
               </div>
               <div style={{ marginBottom: 12 }}>
                 <label><b>Key Concepts:</b></label>
-                <textarea value={sectionConcepts} onChange={e => setSectionConcepts(e.target.value)} rows={4} style={{ width: '80%', borderRadius: 4, padding: 6, fontSize: 16 }} />
+                <ReactQuill
+                  value={sectionConcepts}
+                  onChange={setSectionConcepts}
+                  theme="snow"
+                  style={{ marginBottom: 12, background: '#fff' }}
+                  modules={{
+                    toolbar: [
+                      [{ 'header': [1, 2, false] }],
+                      ['bold', 'italic', 'underline'],
+                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                      ['clean']
+                    ]
+                  }}
+                />
                 <button onClick={() => regenerateSection('concepts')} disabled={loadingSection==='concepts'} style={{ marginLeft: 8 }}>{loadingSection==='concepts' ? 'Regenerating...' : 'Regenerate'}</button>
               </div>
               <div style={{ marginBottom: 12 }}>
                 <label><b>Engaging Activities:</b></label>
-                <textarea value={sectionActivities} onChange={e => setSectionActivities(e.target.value)} rows={4} style={{ width: '80%', borderRadius: 4, padding: 6, fontSize: 16 }} />
+                <ReactQuill
+                  value={sectionActivities}
+                  onChange={setSectionActivities}
+                  theme="snow"
+                  style={{ marginBottom: 12, background: '#fff' }}
+                  modules={{
+                    toolbar: [
+                      [{ 'header': [1, 2, false] }],
+                      ['bold', 'italic', 'underline'],
+                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                      ['clean']
+                    ]
+                  }}
+                />
                 <button onClick={() => regenerateSection('activities')} disabled={loadingSection==='activities'} style={{ marginLeft: 8 }}>{loadingSection==='activities' ? 'Regenerating...' : 'Regenerate'}</button>
               </div>
             </div>
@@ -317,7 +384,10 @@ function App() {
                 {mod.lessons.map((les, lidx) => (
                   <li key={lidx} style={{ marginBottom: 16 }}>
                     <strong>{les.title}</strong> ({les.topic})
-                    <div style={{ fontSize: '0.95em', marginTop: 4, background: '#fff', color: '#222', borderRadius: 4, padding: 8, whiteSpace: 'pre-wrap' }}>{les.content}</div>
+                    <div
+                      style={{ fontSize: '0.95em', marginTop: 4, background: '#fff', color: '#222', borderRadius: 4, padding: 8 }}
+                      dangerouslySetInnerHTML={{ __html: les.content }}
+                    />
                     <div style={{ fontSize: '0.9em', marginTop: 4, color: '#ccc' }}>
                       <div><b>Prerequisites:</b> {les.prerequisites || 'None'}</div>
                       <div><b>Difficulty:</b> {les.difficulty}</div>
