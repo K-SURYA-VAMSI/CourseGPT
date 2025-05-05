@@ -7,6 +7,9 @@ function App() {
   const [lesson, setLesson] = useState('');
   const [generatedContent, setGeneratedContent] = useState(null);
 
+  // Editable lesson content
+  const [editableLessonContent, setEditableLessonContent] = useState('');
+
   // Lesson metadata state
   const [prerequisites, setPrerequisites] = useState('');
   const [difficulty, setDifficulty] = useState('Easy');
@@ -22,25 +25,30 @@ function App() {
     try {
       const result = await generateLessonContent(topic, lesson);
       setGeneratedContent(result);
+      // Set editable content to the generated lesson text
+      const text = getLessonText(result);
+      setEditableLessonContent(text);
     } catch (error) {
       setGeneratedContent({ error: 'Failed to generate lesson content.' });
+      setEditableLessonContent('');
     }
   };
 
-  const getLessonText = () => {
+  // Accepts an optional content object (for use in handleGenerate)
+  const getLessonText = (content = generatedContent) => {
     if (
-      generatedContent &&
-      generatedContent.candidates &&
-      generatedContent.candidates[0] &&
-      generatedContent.candidates[0].content &&
-      generatedContent.candidates[0].content.parts &&
-      generatedContent.candidates[0].content.parts[0] &&
-      generatedContent.candidates[0].content.parts[0].text
+      content &&
+      content.candidates &&
+      content.candidates[0] &&
+      content.candidates[0].content &&
+      content.candidates[0].content.parts &&
+      content.candidates[0].content.parts[0] &&
+      content.candidates[0].content.parts[0].text
     ) {
-      return generatedContent.candidates[0].content.parts[0].text;
+      return content.candidates[0].content.parts[0].text;
     }
-    if (generatedContent && generatedContent.error) {
-      return generatedContent.error;
+    if (content && content.error) {
+      return content.error;
     }
     return '';
   };
@@ -56,12 +64,12 @@ function App() {
     setNewModuleDesc('');
   };
 
-  // Add generated lesson to selected module
+  // Add edited lesson to selected module
   const handleAddLessonToModule = () => {
-    if (selectedModuleIdx === null || !generatedContent) return;
+    if (selectedModuleIdx === null || !editableLessonContent) return;
     const lessonObj = {
       title: lesson,
-      content: getLessonText(),
+      content: editableLessonContent,
       topic: topic,
       prerequisites,
       difficulty,
@@ -71,6 +79,7 @@ function App() {
     updatedModules[selectedModuleIdx].lessons.push(lessonObj);
     setModules(updatedModules);
     setGeneratedContent(null);
+    setEditableLessonContent('');
     setLesson('');
     setTopic('');
     setPrerequisites('');
@@ -123,9 +132,12 @@ function App() {
         {generatedContent && (
           <div>
             <h2>Generated Content</h2>
-            <div style={{ textAlign: 'left', background: '#fff', color: '#222', padding: '1em', borderRadius: '8px', maxWidth: 800, margin: '1em auto', whiteSpace: 'pre-wrap' }}>
-              {getLessonText()}
-            </div>
+            <textarea
+              value={editableLessonContent}
+              onChange={e => setEditableLessonContent(e.target.value)}
+              rows={16}
+              style={{ width: '100%', maxWidth: 800, margin: '1em auto', display: 'block', borderRadius: 8, padding: 12, fontSize: 16 }}
+            />
             <div style={{ marginTop: '1em' }}>
               <select value={selectedModuleIdx ?? ''} onChange={e => setSelectedModuleIdx(e.target.value === '' ? null : Number(e.target.value))}>
                 <option value="">Select Module</option>
@@ -133,7 +145,7 @@ function App() {
                   <option key={idx} value={idx}>{mod.title}</option>
                 ))}
               </select>
-              <button onClick={handleAddLessonToModule} disabled={selectedModuleIdx === null}>Add Lesson to Module</button>
+              <button onClick={handleAddLessonToModule} disabled={selectedModuleIdx === null || !editableLessonContent}>Add Lesson to Module</button>
             </div>
           </div>
         )}
