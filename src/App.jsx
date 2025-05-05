@@ -2,13 +2,35 @@ import React, { useState } from 'react';
 import './App.css';
 import { generateLessonContent } from './services/geminiService';
 
+// Helper to parse lesson text into sections
+function parseLessonSections(text) {
+  // Simple regex-based parsing for demonstration
+  const titleMatch = text.match(/^#+\s*(.*)/m);
+  const descriptionMatch = text.match(/\*\*Description:\*\*([\s\S]*?)\*\*Learning Outcomes:\*\*/m);
+  const outcomesMatch = text.match(/\*\*Learning Outcomes:\*\*([\s\S]*?)\*\*Key Concepts:\*\*/m);
+  const conceptsMatch = text.match(/\*\*Key Concepts:\*\*([\s\S]*?)\*\*Engaging Activities:\*\*/m);
+  const activitiesMatch = text.match(/\*\*Engaging Activities:\*\*([\s\S]*)/m);
+
+  return {
+    title: titleMatch ? titleMatch[1].trim() : '',
+    description: descriptionMatch ? descriptionMatch[1].trim() : '',
+    outcomes: outcomesMatch ? outcomesMatch[1].trim() : '',
+    concepts: conceptsMatch ? conceptsMatch[1].trim() : '',
+    activities: activitiesMatch ? activitiesMatch[1].trim() : '',
+  };
+}
+
 function App() {
   const [topic, setTopic] = useState('');
   const [lesson, setLesson] = useState('');
   const [generatedContent, setGeneratedContent] = useState(null);
 
-  // Editable lesson content
-  const [editableLessonContent, setEditableLessonContent] = useState('');
+  // Section states
+  const [sectionTitle, setSectionTitle] = useState('');
+  const [sectionDescription, setSectionDescription] = useState('');
+  const [sectionOutcomes, setSectionOutcomes] = useState('');
+  const [sectionConcepts, setSectionConcepts] = useState('');
+  const [sectionActivities, setSectionActivities] = useState('');
 
   // Lesson metadata state
   const [prerequisites, setPrerequisites] = useState('');
@@ -25,12 +47,20 @@ function App() {
     try {
       const result = await generateLessonContent(topic, lesson);
       setGeneratedContent(result);
-      // Set editable content to the generated lesson text
       const text = getLessonText(result);
-      setEditableLessonContent(text);
+      const sections = parseLessonSections(text);
+      setSectionTitle(sections.title);
+      setSectionDescription(sections.description);
+      setSectionOutcomes(sections.outcomes);
+      setSectionConcepts(sections.concepts);
+      setSectionActivities(sections.activities);
     } catch (error) {
       setGeneratedContent({ error: 'Failed to generate lesson content.' });
-      setEditableLessonContent('');
+      setSectionTitle('');
+      setSectionDescription('');
+      setSectionOutcomes('');
+      setSectionConcepts('');
+      setSectionActivities('');
     }
   };
 
@@ -66,20 +96,25 @@ function App() {
 
   // Add edited lesson to selected module
   const handleAddLessonToModule = () => {
-    if (selectedModuleIdx === null || !editableLessonContent) return;
+    if (selectedModuleIdx === null) return;
     const lessonObj = {
       title: lesson,
-      content: editableLessonContent,
       topic: topic,
       prerequisites,
       difficulty,
-      estimatedTime
+      estimatedTime,
+      // Combine all sections for the lesson content
+      content: `# ${sectionTitle}\n\n**Description:** ${sectionDescription}\n\n**Learning Outcomes:**\n${sectionOutcomes}\n\n**Key Concepts:**\n${sectionConcepts}\n\n**Engaging Activities:**\n${sectionActivities}`
     };
     const updatedModules = [...modules];
     updatedModules[selectedModuleIdx].lessons.push(lessonObj);
     setModules(updatedModules);
     setGeneratedContent(null);
-    setEditableLessonContent('');
+    setSectionTitle('');
+    setSectionDescription('');
+    setSectionOutcomes('');
+    setSectionConcepts('');
+    setSectionActivities('');
     setLesson('');
     setTopic('');
     setPrerequisites('');
@@ -132,12 +167,28 @@ function App() {
         {generatedContent && (
           <div>
             <h2>Generated Content</h2>
-            <textarea
-              value={editableLessonContent}
-              onChange={e => setEditableLessonContent(e.target.value)}
-              rows={16}
-              style={{ width: '100%', maxWidth: 800, margin: '1em auto', display: 'block', borderRadius: 8, padding: 12, fontSize: 16 }}
-            />
+            <div style={{ width: '100%', maxWidth: 800, margin: '1em auto', background: '#fff', color: '#222', borderRadius: 8, padding: 16 }}>
+              <div style={{ marginBottom: 12 }}>
+                <label><b>Title:</b></label>
+                <textarea value={sectionTitle} onChange={e => setSectionTitle(e.target.value)} rows={2} style={{ width: '100%', borderRadius: 4, padding: 6, fontSize: 16 }} />
+              </div>
+              <div style={{ marginBottom: 12 }}>
+                <label><b>Description:</b></label>
+                <textarea value={sectionDescription} onChange={e => setSectionDescription(e.target.value)} rows={3} style={{ width: '100%', borderRadius: 4, padding: 6, fontSize: 16 }} />
+              </div>
+              <div style={{ marginBottom: 12 }}>
+                <label><b>Learning Outcomes:</b></label>
+                <textarea value={sectionOutcomes} onChange={e => setSectionOutcomes(e.target.value)} rows={4} style={{ width: '100%', borderRadius: 4, padding: 6, fontSize: 16 }} />
+              </div>
+              <div style={{ marginBottom: 12 }}>
+                <label><b>Key Concepts:</b></label>
+                <textarea value={sectionConcepts} onChange={e => setSectionConcepts(e.target.value)} rows={4} style={{ width: '100%', borderRadius: 4, padding: 6, fontSize: 16 }} />
+              </div>
+              <div style={{ marginBottom: 12 }}>
+                <label><b>Engaging Activities:</b></label>
+                <textarea value={sectionActivities} onChange={e => setSectionActivities(e.target.value)} rows={4} style={{ width: '100%', borderRadius: 4, padding: 6, fontSize: 16 }} />
+              </div>
+            </div>
             <div style={{ marginTop: '1em' }}>
               <select value={selectedModuleIdx ?? ''} onChange={e => setSelectedModuleIdx(e.target.value === '' ? null : Number(e.target.value))}>
                 <option value="">Select Module</option>
@@ -145,7 +196,7 @@ function App() {
                   <option key={idx} value={idx}>{mod.title}</option>
                 ))}
               </select>
-              <button onClick={handleAddLessonToModule} disabled={selectedModuleIdx === null || !editableLessonContent}>Add Lesson to Module</button>
+              <button onClick={handleAddLessonToModule} disabled={selectedModuleIdx === null}>Add Lesson to Module</button>
             </div>
           </div>
         )}
