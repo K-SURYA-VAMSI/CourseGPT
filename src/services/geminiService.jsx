@@ -1,7 +1,11 @@
 import axios from 'axios';
 
-const GEMINI_API_KEY = 'AIzaSyDfTk52veSZ696lw1Hne0a4HD0oC1bq7BE'; 
+const GEMINI_API_KEY = process.env.REACT_APP_GEMINI_API_KEY;
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent';
+
+if (!GEMINI_API_KEY) {
+  console.error('REACT_APP_GEMINI_API_KEY is not defined in environment variables');
+}
 
 export const generateLessonContent = async (topic, lesson) => {
   try {
