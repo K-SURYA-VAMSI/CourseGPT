@@ -15,6 +15,20 @@ This project requires a Gemini API key to function. Follow these steps to set up
 
 Note: The `.env` file is already included in `.gitignore` to prevent exposing your API key. Never commit this file to version control.
 
+## Installation
+
+First, install all dependencies by running:
+
+```
+npm install
+```
+
+or, if you use yarn:
+
+```
+yarn install
+```
+
 ## Available Scripts
 
 In the project directory, you can run:
