@@ -33,9 +33,8 @@ Create a `.env` file in the `server` directory with:
 ```
 MONGODB_URI=mongodb://localhost:27017/coursegpt
 PORT=5000
-GEMINI_API_KEY=your_gemini_api_key
+GEMINI_API_KEY=AIzaSyDfTk52veSZ696lw1Hne0a4HD0oC1bq7BE
 ```
-- Replace `your_gemini_api_key` with your actual Gemini API key ([get one here](https://makersuite.google.com/app/apikey)).
 
 Start MongoDB (if not already running), then start the backend:
 ```bash
@@ -69,6 +68,6 @@ The app will open at [http://localhost:3000](http://localhost:3000)
 - `POST /api/lessons/generate` — Generate lesson content using Gemini API
 
 ## Environment Variables
-- `MONGODB_URI` — MongoDB connection string
+- `MONGODB_URI` — MongoDB connection string (default: mongodb://localhost:27017/coursegpt)
 - `PORT` — Backend server port (default: 5000)
-- `GEMINI_API_KEY` — Your Google Gemini API key
+- `GEMINI_API_KEY` — Your Google Gemini API key (required for AI content generation)
