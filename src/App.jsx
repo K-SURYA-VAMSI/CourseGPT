@@ -208,6 +208,39 @@ function App() {
     setEstimatedTime('');
   };
 
+  // Suggest intelligent lesson order based on prerequisites
+  const suggestLessonOrder = (moduleIdx) => {
+    const module = modules[moduleIdx];
+    if (!module) return;
+    // Split prerequisites by comma and trim
+    const lessons = [...module.lessons];
+    const lessonTitles = lessons.map(l => l.title.trim().toLowerCase());
+    // Simple topological sort based on prerequisites
+    const sorted = [];
+    const added = new Set();
+    let changed = true;
+    while (lessons.length && changed) {
+      changed = false;
+      for (let i = 0; i < lessons.length; i++) {
+        const l = lessons[i];
+        const prereqs = (l.prerequisites || '').split(',').map(p => p.trim().toLowerCase()).filter(Boolean);
+        if (prereqs.length === 0 || prereqs.every(p => added.has(p) || !lessonTitles.includes(p))) {
+          sorted.push(l);
+          added.add(l.title.trim().toLowerCase());
+          lessons.splice(i, 1);
+          changed = true;
+          break;
+        }
+      }
+    }
+    // Add any remaining lessons (circular/missing prereqs)
+    sorted.push(...lessons);
+    // Update module lessons
+    const updatedModules = [...modules];
+    updatedModules[moduleIdx].lessons = sorted;
+    setModules(updatedModules);
+  };
+
   return (
     <div className="App">
       <header className="App-header">
@@ -378,6 +411,7 @@ function App() {
             <div key={idx} style={{ background: '#222', color: '#fff', borderRadius: 8, padding: 16, marginBottom: 16 }}>
               <h3>{mod.title}</h3>
               <p>{mod.description}</p>
+              <button onClick={() => suggestLessonOrder(idx)} style={{ marginBottom: 8 }}>Suggest Lesson Order</button>
               <h4>Lessons:</h4>
               {mod.lessons.length === 0 && <p>No lessons in this module.</p>}
               <ul>
