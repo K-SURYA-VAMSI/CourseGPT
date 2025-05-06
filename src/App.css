@@ -434,3 +434,16 @@
     margin-top: 0.5rem;
   }
 }
+
+.navbar-logo-title {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.navbar-logo {
+  height: 36px;
+  width: 36px;
+  object-fit: contain;
+  display: block;
+}

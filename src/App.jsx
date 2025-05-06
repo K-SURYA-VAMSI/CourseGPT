@@ -9,7 +9,10 @@ function NavBar() {
   return (
     <nav className="navbar">
       <div className="navbar-content">
-        <span className="navbar-title">CourseGPT</span>
+        <span className="navbar-logo-title">
+          <img src="/logo.png" alt="CourseGPT Logo" className="navbar-logo" />
+          <span className="navbar-title">CourseGPT</span>
+        </span>
         <div className="navbar-links">
           <Link to="/">Home</Link>
           <Link to="/modules">Modules</Link>
