@@ -1,18 +1,30 @@
 import React, { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import './App.css';
 import { generateLessonContent } from './services/geminiService';
 
+function NavBar() {
+  return (
+    <nav className="navbar">
+      <div className="navbar-content">
+        <span className="navbar-title">CourseGPT</span>
+        <div className="navbar-links">
+          <Link to="/">Home</Link>
+          <Link to="/modules">Modules</Link>
+        </div>
+      </div>
+    </nav>
+  );
+}
 
 function parseLessonSections(text) {
-  // Simple regex-based parsing for demonstration
   const titleMatch = text.match(/^#+\s*(.*)/m);
   const descriptionMatch = text.match(/\*\*Description:\*\*([\s\S]*?)\*\*Learning Outcomes:\*\*/m);
   const outcomesMatch = text.match(/\*\*Learning Outcomes:\*\*([\s\S]*?)\*\*Key Concepts:\*\*/m);
   const conceptsMatch = text.match(/\*\*Key Concepts:\*\*([\s\S]*?)\*\*Engaging Activities:\*\*/m);
   const activitiesMatch = text.match(/\*\*Engaging Activities:\*\*([\s\S]*)/m);
-
   return {
     title: titleMatch ? titleMatch[1].trim() : '',
     description: descriptionMatch ? descriptionMatch[1].trim() : '',
@@ -22,25 +34,155 @@ function parseLessonSections(text) {
   };
 }
 
+function HomePage({
+  topic, setTopic, lesson, setLesson, prerequisites, setPrerequisites, difficulty, setDifficulty, estimatedTime, setEstimatedTime,
+  generatedContent, setGeneratedContent, sectionTitle, setSectionTitle, sectionDescription, setSectionDescription, sectionOutcomes, setSectionOutcomes, sectionConcepts, setSectionConcepts, sectionActivities, setSectionActivities, loadingSection, setLoadingSection,
+  modules, setModules, selectedModuleIdx, setSelectedModuleIdx, handleGenerate, regenerateSection, handleAddLessonToModule
+}) {
+  return (
+    <div className="App">
+      <header className="App-header">
+        <form className="form-container" onSubmit={e => { e.preventDefault(); handleGenerate(); }}>
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="topic">Topic</label>
+              <input id="topic" type="text" placeholder="Enter topic" value={topic} onChange={e => setTopic(e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label htmlFor="lesson">Lesson</label>
+              <input id="lesson" type="text" placeholder="Enter lesson" value={lesson} onChange={e => setLesson(e.target.value)} />
+            </div>
+          </div>
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="prerequisites">Prerequisites</label>
+              <input id="prerequisites" type="text" placeholder="Prerequisites (comma separated)" value={prerequisites} onChange={e => setPrerequisites(e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label htmlFor="difficulty">Difficulty</label>
+              <select id="difficulty" value={difficulty} onChange={e => setDifficulty(e.target.value)}>
+                <option value="Easy">Easy</option>
+                <option value="Medium">Medium</option>
+                <option value="Hard">Hard</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label htmlFor="estimatedTime">Estimated Time</label>
+              <input id="estimatedTime" type="text" placeholder="Estimated Time (e.g. 30 min)" value={estimatedTime} onChange={e => setEstimatedTime(e.target.value)} />
+            </div>
+          </div>
+          <div className="form-row" style={{ justifyContent: 'flex-end' }}>
+            <button className="button" type="submit">Generate Lesson</button>
+          </div>
+        </form>
+        {generatedContent && (
+          <div>
+            <h2>Generated Content</h2>
+            <div style={{ width: '100%', maxWidth: 800, margin: '1em auto', background: '#fff', color: '#222', borderRadius: 8, padding: 16 }}>
+              <div style={{ marginBottom: 12 }}>
+                <label><b>Title:</b></label>
+                <ReactQuill value={sectionTitle} onChange={setSectionTitle} theme="snow" style={{ marginBottom: 12, background: '#fff' }} modules={{ toolbar: [[{ 'header': [1, 2, false] }], ['bold', 'italic', 'underline'], [{ 'list': 'ordered'}, { 'list': 'bullet' }], ['clean']] }} />
+                <button className="secondary-button" onClick={() => regenerateSection('title')} disabled={loadingSection==='title'}>{loadingSection==='title' ? 'Regenerating...' : 'Regenerate'}</button>
+              </div>
+              <div style={{ marginBottom: 12 }}>
+                <label><b>Description:</b></label>
+                <ReactQuill value={sectionDescription} onChange={setSectionDescription} theme="snow" style={{ marginBottom: 12, background: '#fff' }} modules={{ toolbar: [[{ 'header': [1, 2, false] }], ['bold', 'italic', 'underline'], [{ 'list': 'ordered'}, { 'list': 'bullet' }], ['clean']] }} />
+                <button className="secondary-button" onClick={() => regenerateSection('description')} disabled={loadingSection==='description'}>{loadingSection==='description' ? 'Regenerating...' : 'Regenerate'}</button>
+              </div>
+              <div style={{ marginBottom: 12 }}>
+                <label><b>Learning Outcomes:</b></label>
+                <ReactQuill value={sectionOutcomes} onChange={setSectionOutcomes} theme="snow" style={{ marginBottom: 12, background: '#fff' }} modules={{ toolbar: [[{ 'header': [1, 2, false] }], ['bold', 'italic', 'underline'], [{ 'list': 'ordered'}, { 'list': 'bullet' }], ['clean']] }} />
+                <button className="secondary-button" onClick={() => regenerateSection('outcomes')} disabled={loadingSection==='outcomes'}>{loadingSection==='outcomes' ? 'Regenerating...' : 'Regenerate'}</button>
+              </div>
+              <div style={{ marginBottom: 12 }}>
+                <label><b>Key Concepts:</b></label>
+                <ReactQuill value={sectionConcepts} onChange={setSectionConcepts} theme="snow" style={{ marginBottom: 12, background: '#fff' }} modules={{ toolbar: [[{ 'header': [1, 2, false] }], ['bold', 'italic', 'underline'], [{ 'list': 'ordered'}, { 'list': 'bullet' }], ['clean']] }} />
+                <button className="secondary-button" onClick={() => regenerateSection('concepts')} disabled={loadingSection==='concepts'}>{loadingSection==='concepts' ? 'Regenerating...' : 'Regenerate'}</button>
+              </div>
+              <div style={{ marginBottom: 12 }}>
+                <label><b>Engaging Activities:</b></label>
+                <ReactQuill value={sectionActivities} onChange={setSectionActivities} theme="snow" style={{ marginBottom: 12, background: '#fff' }} modules={{ toolbar: [[{ 'header': [1, 2, false] }], ['bold', 'italic', 'underline'], [{ 'list': 'ordered'}, { 'list': 'bullet' }], ['clean']] }} />
+                <button className="secondary-button" onClick={() => regenerateSection('activities')} disabled={loadingSection==='activities'}>{loadingSection==='activities' ? 'Regenerating...' : 'Regenerate'}</button>
+              </div>
+            </div>
+            <div className="select-row">
+              <select className="select" value={selectedModuleIdx ?? ''} onChange={e => setSelectedModuleIdx(e.target.value === '' ? null : Number(e.target.value))}>
+                <option value="">Select Module</option>
+                {modules.map((mod, idx) => (
+                  <option key={idx} value={idx}>{mod.title}</option>
+                ))}
+              </select>
+              <button className="button" onClick={handleAddLessonToModule} disabled={selectedModuleIdx === null}>Add Lesson to Module</button>
+            </div>
+          </div>
+        )}
+      </header>
+    </div>
+  );
+}
+
+function ModulesPage({ modules, setModules, newModuleTitle, setNewModuleTitle, newModuleDesc, setNewModuleDesc, handleAddModule, suggestLessonOrder }) {
+  return (
+    <div className="App">
+      <header className="App-header">
+        <h2>Modules</h2>
+        <form className="form-container" onSubmit={e => { e.preventDefault(); handleAddModule(); }}>
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="moduleTitle">Module Title</label>
+              <input id="moduleTitle" type="text" placeholder="Module Title" value={newModuleTitle} onChange={e => setNewModuleTitle(e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label htmlFor="moduleDesc">Module Description</label>
+              <input id="moduleDesc" type="text" placeholder="Module Description" value={newModuleDesc} onChange={e => setNewModuleDesc(e.target.value)} />
+            </div>
+            <div className="form-group" style={{ alignSelf: 'flex-end' }}>
+              <button className="button" type="submit">Add Module</button>
+            </div>
+          </div>
+        </form>
+        {modules.length === 0 && <p>No modules yet.</p>}
+        {modules.map((mod, idx) => (
+          <div key={idx} style={{ background: '#222', color: '#fff', borderRadius: 8, padding: 16, marginBottom: 16 }}>
+            <h3>{mod.title}</h3>
+            <p>{mod.description}</p>
+            <button className="secondary-button" onClick={() => suggestLessonOrder(idx)} style={{ marginBottom: 8 }}>Suggest Lesson Order</button>
+            <h4>Lessons:</h4>
+            {mod.lessons.length === 0 && <p>No lessons in this module.</p>}
+            <ul>
+              {mod.lessons.map((les, lidx) => (
+                <li key={lidx} style={{ marginBottom: 16 }}>
+                  <strong>{les.title}</strong> ({les.topic})
+                  <div style={{ fontSize: '0.95em', marginTop: 4, background: '#fff', color: '#222', borderRadius: 4, padding: 8 }} dangerouslySetInnerHTML={{ __html: les.content }} />
+                  <div style={{ fontSize: '0.9em', marginTop: 4, color: '#ccc' }}>
+                    <div><b>Prerequisites:</b> {les.prerequisites || 'None'}</div>
+                    <div><b>Difficulty:</b> {les.difficulty}</div>
+                    <div><b>Estimated Time:</b> {les.estimatedTime || 'N/A'}</div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </header>
+    </div>
+  );
+}
+
 function App() {
+  // Shared state
   const [topic, setTopic] = useState('');
   const [lesson, setLesson] = useState('');
   const [generatedContent, setGeneratedContent] = useState(null);
-
-  // Section states
   const [sectionTitle, setSectionTitle] = useState('');
   const [sectionDescription, setSectionDescription] = useState('');
   const [sectionOutcomes, setSectionOutcomes] = useState('');
   const [sectionConcepts, setSectionConcepts] = useState('');
   const [sectionActivities, setSectionActivities] = useState('');
   const [loadingSection, setLoadingSection] = useState('');
-
-  // Lesson metadata state
   const [prerequisites, setPrerequisites] = useState('');
   const [difficulty, setDifficulty] = useState('Easy');
   const [estimatedTime, setEstimatedTime] = useState('');
-
-  // Module organization state
   const [modules, setModules] = useState([]);
   const [newModuleTitle, setNewModuleTitle] = useState('');
   const [newModuleDesc, setNewModuleDesc] = useState('');
@@ -72,7 +214,6 @@ function App() {
     }
   };
 
-  // Accepts an optional content object (for use in handleGenerate)
   const getLessonText = (content = generatedContent) => {
     if (
       content &&
@@ -91,7 +232,6 @@ function App() {
     return '';
   };
 
-  // Section-specific regeneration
   const regenerateSection = async (section) => {
     setLoadingSection(section);
     let prompt = '';
@@ -117,7 +257,6 @@ function App() {
     try {
       const result = await generateLessonContent(topic, prompt);
       const text = getLessonText(result).trim();
-      // Helper to extract first bullet/numbered list
       const extractFirstList = (str) => {
         const lines = str.split('\n');
         const listLines = [];
@@ -134,7 +273,6 @@ function App() {
         }
         return listLines.length > 0 ? listLines.join('\n') : str;
       };
-      // Loosened fallback checks
       if (section === 'title') {
         if (text && text.split('\n').length === 1 && text.length > 2) setSectionTitle(text);
         else alert('Regenerated title does not look like a single-line title. Please try again.');
@@ -169,7 +307,6 @@ function App() {
     }
   };
 
-  // Module creation handlers
   const handleAddModule = () => {
     if (!newModuleTitle) return;
     setModules([
@@ -180,7 +317,6 @@ function App() {
     setNewModuleDesc('');
   };
 
-  // Add edited lesson to selected module
   const handleAddLessonToModule = () => {
     if (selectedModuleIdx === null) return;
     const lessonObj = {
@@ -189,7 +325,6 @@ function App() {
       prerequisites,
       difficulty,
       estimatedTime,
-      // Combine all sections for the lesson content
       content: `# ${sectionTitle}\n\n**Description:** ${sectionDescription}\n\n**Learning Outcomes:**\n${sectionOutcomes}\n\n**Key Concepts:**\n${sectionConcepts}\n\n**Engaging Activities:**\n${sectionActivities}`
     };
     const updatedModules = [...modules];
@@ -208,14 +343,11 @@ function App() {
     setEstimatedTime('');
   };
 
-  // Suggest intelligent lesson order based on prerequisites
   const suggestLessonOrder = (moduleIdx) => {
     const module = modules[moduleIdx];
     if (!module) return;
-    // Split prerequisites by comma and trim
     const lessons = [...module.lessons];
     const lessonTitles = lessons.map(l => l.title.trim().toLowerCase());
-    // Simple topological sort based on prerequisites
     const sorted = [];
     const added = new Set();
     let changed = true;
@@ -233,208 +365,48 @@ function App() {
         }
       }
     }
-    // Add any remaining lessons (circular/missing prereqs)
     sorted.push(...lessons);
-    // Update module lessons
     const updatedModules = [...modules];
     updatedModules[moduleIdx].lessons = sorted;
     setModules(updatedModules);
   };
 
   return (
-    <div className="App">
-      <header className="App-header">
-        <h1>CourseGPT</h1>
-        <div>
-          <input
-            type="text"
-            placeholder="Enter topic"
-            value={topic}
-            onChange={(e) => setTopic(e.target.value)}
+    <Router>
+      <NavBar />
+      <Routes>
+        <Route path="/" element={
+          <HomePage
+            topic={topic} setTopic={setTopic}
+            lesson={lesson} setLesson={setLesson}
+            prerequisites={prerequisites} setPrerequisites={setPrerequisites}
+            difficulty={difficulty} setDifficulty={setDifficulty}
+            estimatedTime={estimatedTime} setEstimatedTime={setEstimatedTime}
+            generatedContent={generatedContent} setGeneratedContent={setGeneratedContent}
+            sectionTitle={sectionTitle} setSectionTitle={setSectionTitle}
+            sectionDescription={sectionDescription} setSectionDescription={setSectionDescription}
+            sectionOutcomes={sectionOutcomes} setSectionOutcomes={setSectionOutcomes}
+            sectionConcepts={sectionConcepts} setSectionConcepts={setSectionConcepts}
+            sectionActivities={sectionActivities} setSectionActivities={setSectionActivities}
+            loadingSection={loadingSection} setLoadingSection={setLoadingSection}
+            modules={modules} setModules={setModules}
+            selectedModuleIdx={selectedModuleIdx} setSelectedModuleIdx={setSelectedModuleIdx}
+            handleGenerate={handleGenerate}
+            regenerateSection={regenerateSection}
+            handleAddLessonToModule={handleAddLessonToModule}
           />
-          <input
-            type="text"
-            placeholder="Enter lesson"
-            value={lesson}
-            onChange={(e) => setLesson(e.target.value)}
+        } />
+        <Route path="/modules" element={
+          <ModulesPage
+            modules={modules} setModules={setModules}
+            newModuleTitle={newModuleTitle} setNewModuleTitle={setNewModuleTitle}
+            newModuleDesc={newModuleDesc} setNewModuleDesc={setNewModuleDesc}
+            handleAddModule={handleAddModule}
+            suggestLessonOrder={suggestLessonOrder}
           />
-          <input
-            type="text"
-            placeholder="Prerequisites (comma separated)"
-            value={prerequisites}
-            onChange={e => setPrerequisites(e.target.value)}
-            style={{ marginLeft: 8 }}
-          />
-          <select
-            value={difficulty}
-            onChange={e => setDifficulty(e.target.value)}
-            style={{ marginLeft: 8 }}
-          >
-            <option value="Easy">Easy</option>
-            <option value="Medium">Medium</option>
-            <option value="Hard">Hard</option>
-          </select>
-          <input
-            type="text"
-            placeholder="Estimated Time (e.g. 30 min)"
-            value={estimatedTime}
-            onChange={e => setEstimatedTime(e.target.value)}
-            style={{ marginLeft: 8 }}
-          />
-          <button onClick={handleGenerate} style={{ marginLeft: 8 }}>Generate Lesson</button>
-        </div>
-        {generatedContent && (
-          <div>
-            <h2>Generated Content</h2>
-            <div style={{ width: '100%', maxWidth: 800, margin: '1em auto', background: '#fff', color: '#222', borderRadius: 8, padding: 16 }}>
-              <div style={{ marginBottom: 12 }}>
-                <label><b>Title:</b></label>
-                <ReactQuill
-                  value={sectionTitle}
-                  onChange={setSectionTitle}
-                  theme="snow"
-                  style={{ marginBottom: 12, background: '#fff' }}
-                  modules={{
-                    toolbar: [
-                      [{ 'header': [1, 2, false] }],
-                      ['bold', 'italic', 'underline'],
-                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                      ['clean']
-                    ]
-                  }}
-                />
-                <button onClick={() => regenerateSection('title')} disabled={loadingSection==='title'} style={{ marginLeft: 8 }}>{loadingSection==='title' ? 'Regenerating...' : 'Regenerate'}</button>
-              </div>
-              <div style={{ marginBottom: 12 }}>
-                <label><b>Description:</b></label>
-                <ReactQuill
-                  value={sectionDescription}
-                  onChange={setSectionDescription}
-                  theme="snow"
-                  style={{ marginBottom: 12, background: '#fff' }}
-                  modules={{
-                    toolbar: [
-                      [{ 'header': [1, 2, false] }],
-                      ['bold', 'italic', 'underline'],
-                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                      ['clean']
-                    ]
-                  }}
-                />
-                <button onClick={() => regenerateSection('description')} disabled={loadingSection==='description'} style={{ marginLeft: 8 }}>{loadingSection==='description' ? 'Regenerating...' : 'Regenerate'}</button>
-              </div>
-              <div style={{ marginBottom: 12 }}>
-                <label><b>Learning Outcomes:</b></label>
-                <ReactQuill
-                  value={sectionOutcomes}
-                  onChange={setSectionOutcomes}
-                  theme="snow"
-                  style={{ marginBottom: 12, background: '#fff' }}
-                  modules={{
-                    toolbar: [
-                      [{ 'header': [1, 2, false] }],
-                      ['bold', 'italic', 'underline'],
-                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                      ['clean']
-                    ]
-                  }}
-                />
-                <button onClick={() => regenerateSection('outcomes')} disabled={loadingSection==='outcomes'} style={{ marginLeft: 8 }}>{loadingSection==='outcomes' ? 'Regenerating...' : 'Regenerate'}</button>
-              </div>
-              <div style={{ marginBottom: 12 }}>
-                <label><b>Key Concepts:</b></label>
-                <ReactQuill
-                  value={sectionConcepts}
-                  onChange={setSectionConcepts}
-                  theme="snow"
-                  style={{ marginBottom: 12, background: '#fff' }}
-                  modules={{
-                    toolbar: [
-                      [{ 'header': [1, 2, false] }],
-                      ['bold', 'italic', 'underline'],
-                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                      ['clean']
-                    ]
-                  }}
-                />
-                <button onClick={() => regenerateSection('concepts')} disabled={loadingSection==='concepts'} style={{ marginLeft: 8 }}>{loadingSection==='concepts' ? 'Regenerating...' : 'Regenerate'}</button>
-              </div>
-              <div style={{ marginBottom: 12 }}>
-                <label><b>Engaging Activities:</b></label>
-                <ReactQuill
-                  value={sectionActivities}
-                  onChange={setSectionActivities}
-                  theme="snow"
-                  style={{ marginBottom: 12, background: '#fff' }}
-                  modules={{
-                    toolbar: [
-                      [{ 'header': [1, 2, false] }],
-                      ['bold', 'italic', 'underline'],
-                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                      ['clean']
-                    ]
-                  }}
-                />
-                <button onClick={() => regenerateSection('activities')} disabled={loadingSection==='activities'} style={{ marginLeft: 8 }}>{loadingSection==='activities' ? 'Regenerating...' : 'Regenerate'}</button>
-              </div>
-            </div>
-            <div style={{ marginTop: '1em' }}>
-              <select value={selectedModuleIdx ?? ''} onChange={e => setSelectedModuleIdx(e.target.value === '' ? null : Number(e.target.value))}>
-                <option value="">Select Module</option>
-                {modules.map((mod, idx) => (
-                  <option key={idx} value={idx}>{mod.title}</option>
-                ))}
-              </select>
-              <button onClick={handleAddLessonToModule} disabled={selectedModuleIdx === null}>Add Lesson to Module</button>
-            </div>
-          </div>
-        )}
-        <div style={{ marginTop: '2em', width: '100%', maxWidth: 800, marginLeft: 'auto', marginRight: 'auto' }}>
-          <h2>Modules</h2>
-          <div style={{ marginBottom: '1em' }}>
-            <input
-              type="text"
-              placeholder="Module Title"
-              value={newModuleTitle}
-              onChange={e => setNewModuleTitle(e.target.value)}
-            />
-            <input
-              type="text"
-              placeholder="Module Description"
-              value={newModuleDesc}
-              onChange={e => setNewModuleDesc(e.target.value)}
-            />
-            <button onClick={handleAddModule}>Add Module</button>
-          </div>
-          {modules.length === 0 && <p>No modules yet.</p>}
-          {modules.map((mod, idx) => (
-            <div key={idx} style={{ background: '#222', color: '#fff', borderRadius: 8, padding: 16, marginBottom: 16 }}>
-              <h3>{mod.title}</h3>
-              <p>{mod.description}</p>
-              <button onClick={() => suggestLessonOrder(idx)} style={{ marginBottom: 8 }}>Suggest Lesson Order</button>
-              <h4>Lessons:</h4>
-              {mod.lessons.length === 0 && <p>No lessons in this module.</p>}
-              <ul>
-                {mod.lessons.map((les, lidx) => (
-                  <li key={lidx} style={{ marginBottom: 16 }}>
-                    <strong>{les.title}</strong> ({les.topic})
-                    <div
-                      style={{ fontSize: '0.95em', marginTop: 4, background: '#fff', color: '#222', borderRadius: 4, padding: 8 }}
-                      dangerouslySetInnerHTML={{ __html: les.content }}
-                    />
-                    <div style={{ fontSize: '0.9em', marginTop: 4, color: '#ccc' }}>
-                      <div><b>Prerequisites:</b> {les.prerequisites || 'None'}</div>
-                      <div><b>Difficulty:</b> {les.difficulty}</div>
-                      <div><b>Estimated Time:</b> {les.estimatedTime || 'N/A'}</div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-      </header>
-    </div>
+        } />
+      </Routes>
+    </Router>
   );
 }
 
