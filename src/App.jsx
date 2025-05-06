@@ -403,22 +403,33 @@ function App() {
     const lessonTitles = lessons.map(l => l.title.trim().toLowerCase());
     const sorted = [];
     const added = new Set();
-    let changed = true;
-    while (lessons.length && changed) {
-      changed = false;
+    while (lessons.length) {
+      let addedThisRound = false;
+      // Collect all lessons whose prerequisites are satisfied
+      const toAdd = [];
       for (let i = 0; i < lessons.length; i++) {
         const l = lessons[i];
         const prereqs = (l.prerequisites || '').split(',').map(p => p.trim().toLowerCase()).filter(Boolean);
         if (prereqs.length === 0 || prereqs.every(p => added.has(p) || !lessonTitles.includes(p))) {
-          sorted.push(l);
-          added.add(l.title.trim().toLowerCase());
-          lessons.splice(i, 1);
-          changed = true;
-          break;
+          toAdd.push(i);
         }
       }
+      if (toAdd.length === 0) {
+        // Circular or missing prerequisites, add the rest
+        sorted.push(...lessons);
+        break;
+      }
+      // Add all eligible lessons this round
+      for (let j = toAdd.length - 1; j >= 0; j--) {
+        const idx = toAdd[j];
+        const l = lessons[idx];
+        sorted.push(l);
+        added.add(l.title.trim().toLowerCase());
+        lessons.splice(idx, 1);
+        addedThisRound = true;
+      }
+      if (!addedThisRound) break;
     }
-    sorted.push(...lessons);
     const updatedModules = [...modules];
     updatedModules[moduleIdx].lessons = sorted;
     setModules(updatedModules);
