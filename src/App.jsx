@@ -122,6 +122,12 @@ function HomePage({
 }
 
 function ModulesPage({ modules, setModules, newModuleTitle, setNewModuleTitle, newModuleDesc, setNewModuleDesc, handleAddModule, suggestLessonOrder }) {
+  const [selectedModuleIdx, setSelectedModuleIdx] = React.useState('all');
+  const [selectedLessonIdx, setSelectedLessonIdx] = React.useState('all');
+
+  const selectedModule = selectedModuleIdx !== 'all' ? modules[selectedModuleIdx] : null;
+  const lessons = selectedModule ? selectedModule.lessons : [];
+
   return (
     <div className="App">
       <header className="App-header">
@@ -142,29 +148,76 @@ function ModulesPage({ modules, setModules, newModuleTitle, setNewModuleTitle, n
           </div>
         </form>
         {modules.length === 0 && <p>No modules yet.</p>}
-        {modules.map((mod, idx) => (
-          <div key={idx} style={{ background: '#222', color: '#fff', borderRadius: 8, padding: 16, marginBottom: 16 }}>
-            <h3>{mod.title}</h3>
-            <p>{mod.description}</p>
-            <button className="secondary-button" onClick={() => suggestLessonOrder(idx)} style={{ marginBottom: 8 }}>Suggest Lesson Order</button>
-            <h4>Lessons:</h4>
-            {mod.lessons.length === 0 && <p>No lessons in this module.</p>}
-            <ul>
-              {mod.lessons.map((les, lidx) => (
-                <li key={lidx} style={{ marginBottom: 16 }}>
-                  <strong>{les.title}</strong> ({les.topic})
-                  <div style={{ fontSize: '0.95em', marginTop: 4, background: '#fff', color: '#222', borderRadius: 4, padding: 8 }} dangerouslySetInnerHTML={{ __html: les.content }} />
-                  <div style={{ fontSize: '0.9em', marginTop: 4, color: '#ccc' }}>
-                    <div><b>Prerequisites:</b> {les.prerequisites || 'None'}</div>
-                    <div><b>Difficulty:</b> {les.difficulty}</div>
-                    <div><b>Estimated Time:</b> {les.estimatedTime || 'N/A'}</div>
-                  </div>
-                </li>
+        {modules.length > 0 && (
+          <div className="select-row" style={{ marginBottom: 24 }}>
+            <select className="select" value={selectedModuleIdx} onChange={e => { setSelectedModuleIdx(e.target.value); setSelectedLessonIdx('all'); }}>
+              <option value="all">Show All</option>
+              {modules.map((mod, idx) => (
+                <option key={idx} value={idx}>{mod.title}</option>
               ))}
-            </ul>
+            </select>
+            {selectedModule && lessons.length > 0 && (
+              <select className="select" value={selectedLessonIdx} onChange={e => setSelectedLessonIdx(e.target.value)}>
+                <option value="all">Show All Lessons</option>
+                {lessons.map((les, lidx) => (
+                  <option key={lidx} value={lidx}>{les.title}</option>
+                ))}
+              </select>
+            )}
           </div>
-        ))}
+        )}
+        {(modules.length > 0 && selectedModuleIdx !== 'all') ? (
+          selectedLessonIdx !== 'all' ? (
+            <LessonCard les={lessons[selectedLessonIdx]} />
+          ) : (
+            <ModuleCard mod={selectedModule} idx={selectedModuleIdx} suggestLessonOrder={suggestLessonOrder} />
+          )
+        ) : (
+          modules.map((mod, idx) => (
+            <ModuleCard key={idx} mod={mod} idx={idx} suggestLessonOrder={suggestLessonOrder} />
+          ))
+        )}
       </header>
+    </div>
+  );
+}
+
+function ModuleCard({ mod, idx, suggestLessonOrder }) {
+  return (
+    <div style={{ background: '#222', color: '#fff', borderRadius: 8, padding: 16, marginBottom: 16 }}>
+      <h3>{mod.title}</h3>
+      <p>{mod.description}</p>
+      <button className="secondary-button" onClick={() => suggestLessonOrder(idx)} style={{ marginBottom: 8 }}>Suggest Lesson Order</button>
+      <h4>Lessons:</h4>
+      {mod.lessons.length === 0 && <p>No lessons in this module.</p>}
+      <ul>
+        {mod.lessons.map((les, lidx) => (
+          <li key={lidx} style={{ marginBottom: 16 }}>
+            <strong>{les.title}</strong> ({les.topic})
+            <div style={{ fontSize: '0.95em', marginTop: 4, background: '#fff', color: '#222', borderRadius: 4, padding: 8 }} dangerouslySetInnerHTML={{ __html: les.content }} />
+            <div style={{ fontSize: '0.9em', marginTop: 4, color: '#ccc' }}>
+              <div><b>Prerequisites:</b> {les.prerequisites || 'None'}</div>
+              <div><b>Difficulty:</b> {les.difficulty}</div>
+              <div><b>Estimated Time:</b> {les.estimatedTime || 'N/A'}</div>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function LessonCard({ les }) {
+  if (!les) return null;
+  return (
+    <div style={{ background: '#222', color: '#fff', borderRadius: 8, padding: 16, marginBottom: 16 }}>
+      <strong>{les.title}</strong> ({les.topic})
+      <div style={{ fontSize: '0.95em', marginTop: 4, background: '#fff', color: '#222', borderRadius: 4, padding: 8 }} dangerouslySetInnerHTML={{ __html: les.content }} />
+      <div style={{ fontSize: '0.9em', marginTop: 4, color: '#ccc' }}>
+        <div><b>Prerequisites:</b> {les.prerequisites || 'None'}</div>
+        <div><b>Difficulty:</b> {les.difficulty}</div>
+        <div><b>Estimated Time:</b> {les.estimatedTime || 'N/A'}</div>
+      </div>
     </div>
   );
 }
