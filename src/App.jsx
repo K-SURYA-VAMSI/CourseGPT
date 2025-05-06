@@ -1,9 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import './App.css';
-import { generateLessonContent } from './services/geminiService';
+import {
+  getModules,
+  createModule,
+  updateModule,
+  deleteModule,
+  getLessons,
+  generateLessonContent,
+  createLesson,
+  updateLesson,
+  deleteLesson
+} from './services/api';
 
 function NavBar() {
   return (
@@ -194,17 +204,26 @@ function ModuleCard({ mod, idx, suggestLessonOrder }) {
       <h4>Lessons:</h4>
       {mod.lessons.length === 0 && <p>No lessons in this module.</p>}
       <ul>
-        {mod.lessons.map((les, lidx) => (
-          <li key={lidx} style={{ marginBottom: 16 }}>
-            <strong>{les.title}</strong> ({les.topic})
-            <div style={{ fontSize: '0.95em', marginTop: 4, background: '#fff', color: '#222', borderRadius: 4, padding: 8 }} dangerouslySetInnerHTML={{ __html: les.content }} />
-            <div style={{ fontSize: '0.9em', marginTop: 4, color: '#ccc' }}>
-              <div><b>Prerequisites:</b> {les.prerequisites || 'None'}</div>
-              <div><b>Difficulty:</b> {les.difficulty}</div>
-              <div><b>Estimated Time:</b> {les.estimatedTime || 'N/A'}</div>
-            </div>
-          </li>
-        ))}
+        {mod.lessons.map((les, lidx) => {
+          console.log('ModuleCard lesson:', les);
+          return (
+            <li key={lidx} style={{ marginBottom: 16 }}>
+              <strong>{les.title}</strong> ({les.topic})
+              <div style={{ fontSize: '0.95em', marginTop: 4, background: '#fff', color: '#222', borderRadius: 4, padding: 8 }}>
+                <div><b>Title:</b> <span dangerouslySetInnerHTML={{ __html: les.content?.title || '' }} /></div>
+                <div><b>Description:</b> <span dangerouslySetInnerHTML={{ __html: les.content?.description || '' }} /></div>
+                <div><b>Learning Outcomes:</b> <span dangerouslySetInnerHTML={{ __html: les.content?.outcomes || '' }} /></div>
+                <div><b>Key Concepts:</b> <span dangerouslySetInnerHTML={{ __html: les.content?.concepts || '' }} /></div>
+                <div><b>Engaging Activities:</b> <span dangerouslySetInnerHTML={{ __html: les.content?.activities || '' }} /></div>
+              </div>
+              <div style={{ fontSize: '0.9em', marginTop: 4, color: '#ccc' }}>
+                <div><b>Prerequisites:</b> {les.prerequisites || 'None'}</div>
+                <div><b>Difficulty:</b> {les.difficulty}</div>
+                <div><b>Estimated Time:</b> {les.estimatedTime || 'N/A'}</div>
+              </div>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
@@ -212,10 +231,17 @@ function ModuleCard({ mod, idx, suggestLessonOrder }) {
 
 function LessonCard({ les }) {
   if (!les) return null;
+  console.log('LessonCard data:', les);
   return (
     <div style={{ background: '#222', color: '#fff', borderRadius: 8, padding: 16, marginBottom: 16 }}>
       <strong>{les.title}</strong> ({les.topic})
-      <div style={{ fontSize: '0.95em', marginTop: 4, background: '#fff', color: '#222', borderRadius: 4, padding: 8 }} dangerouslySetInnerHTML={{ __html: les.content }} />
+      <div style={{ fontSize: '0.95em', marginTop: 4, background: '#fff', color: '#222', borderRadius: 4, padding: 8 }}>
+        <div><b>Title:</b> <span dangerouslySetInnerHTML={{ __html: les.content?.title || '' }} /></div>
+        <div><b>Description:</b> <span dangerouslySetInnerHTML={{ __html: les.content?.description || '' }} /></div>
+        <div><b>Learning Outcomes:</b> <span dangerouslySetInnerHTML={{ __html: les.content?.outcomes || '' }} /></div>
+        <div><b>Key Concepts:</b> <span dangerouslySetInnerHTML={{ __html: les.content?.concepts || '' }} /></div>
+        <div><b>Engaging Activities:</b> <span dangerouslySetInnerHTML={{ __html: les.content?.activities || '' }} /></div>
+      </div>
       <div style={{ fontSize: '0.9em', marginTop: 4, color: '#ccc' }}>
         <div><b>Prerequisites:</b> {les.prerequisites || 'None'}</div>
         <div><b>Difficulty:</b> {les.difficulty}</div>
@@ -243,6 +269,19 @@ function App() {
   const [newModuleTitle, setNewModuleTitle] = useState('');
   const [newModuleDesc, setNewModuleDesc] = useState('');
   const [selectedModuleIdx, setSelectedModuleIdx] = useState(null);
+
+  // Load modules on component mount
+  useEffect(() => {
+    const fetchModules = async () => {
+      try {
+        const data = await getModules();
+        setModules(data);
+      } catch (error) {
+        console.error('Error fetching modules:', error);
+      }
+    };
+    fetchModules();
+  }, []);
 
   const handleGenerate = async () => {
     try {
@@ -293,7 +332,7 @@ function App() {
     let prompt = '';
     switch (section) {
       case 'title':
-        prompt = `Return only a single, short lesson title for the topic: ${topic} and lesson: ${lesson}. No heading, no quotes, no extra text, no summary, no newlines.`;
+        prompt = `Give only a single, short lesson title for the topic: ${topic} and lesson: ${lesson}. No heading, no quotes, no extra text, no summary, no newlines.`;
         break;
       case 'description':
         prompt = `Generate ONLY a detailed lesson description for the topic: ${topic} and lesson: ${lesson}. Return only a single paragraph description, no title, no heading, no list, no summary.`;
@@ -363,79 +402,118 @@ function App() {
     }
   };
 
-  const handleAddModule = () => {
+  const handleAddModule = async () => {
     if (!newModuleTitle) return;
-    setModules([
-      ...modules,
-      { title: newModuleTitle, description: newModuleDesc, lessons: [] }
-    ]);
-    setNewModuleTitle('');
-    setNewModuleDesc('');
+    try {
+      const module = await createModule({
+        title: newModuleTitle,
+        description: newModuleDesc
+      });
+      setModules([...modules, module]);
+      setNewModuleTitle('');
+      setNewModuleDesc('');
+    } catch (error) {
+      alert('Failed to create module.');
+    }
   };
 
-  const handleAddLessonToModule = () => {
+  const handleAddLessonToModule = async () => {
     if (selectedModuleIdx === null) return;
-    const lessonObj = {
-      title: lesson,
-      topic: topic,
-      prerequisites,
-      difficulty,
-      estimatedTime,
-      content: `# ${sectionTitle}\n\n**Description:** ${sectionDescription}\n\n**Learning Outcomes:**\n${sectionOutcomes}\n\n**Key Concepts:**\n${sectionConcepts}\n\n**Engaging Activities:**\n${sectionActivities}`
-    };
-    const updatedModules = [...modules];
-    updatedModules[selectedModuleIdx].lessons.push(lessonObj);
-    setModules(updatedModules);
-    setGeneratedContent(null);
-    setSectionTitle('');
-    setSectionDescription('');
-    setSectionOutcomes('');
-    setSectionConcepts('');
-    setSectionActivities('');
-    setLesson('');
-    setTopic('');
-    setPrerequisites('');
-    setDifficulty('Easy');
-    setEstimatedTime('');
+    try {
+      const lessonData = {
+        title: lesson,
+        topic: topic,
+        prerequisites,
+        difficulty,
+        estimatedTime,
+        content: {
+          title: sectionTitle,
+          description: sectionDescription,
+          outcomes: sectionOutcomes,
+          concepts: sectionConcepts,
+          activities: sectionActivities
+        },
+        moduleId: modules[selectedModuleIdx]._id
+      };
+      console.log('Creating lesson with data:', lessonData);
+      const newLesson = await createLesson(lessonData);
+      const updatedModules = [...modules];
+      updatedModules[selectedModuleIdx].lessons.push(newLesson);
+      setModules(updatedModules);
+      setGeneratedContent(null);
+      setSectionTitle('');
+      setSectionDescription('');
+      setSectionOutcomes('');
+      setSectionConcepts('');
+      setSectionActivities('');
+      setLesson('');
+      setTopic('');
+      setPrerequisites('');
+      setDifficulty('Easy');
+      setEstimatedTime('');
+    } catch (error) {
+      alert('Failed to add lesson to module.');
+    }
   };
 
-  const suggestLessonOrder = (moduleIdx) => {
+  const suggestLessonOrder = async (moduleIdx) => {
     const module = modules[moduleIdx];
-    if (!module) return;
-    const lessons = [...module.lessons];
+    if (!module || !module.lessons) return;
+    
+    const lessons = [...module.lessons].filter(lesson => lesson && lesson.title); // Filter out invalid lessons
+    if (lessons.length === 0) return;
+
     const lessonTitles = lessons.map(l => l.title.trim().toLowerCase());
     const sorted = [];
     const added = new Set();
+    
     while (lessons.length) {
       let addedThisRound = false;
       // Collect all lessons whose prerequisites are satisfied
       const toAdd = [];
       for (let i = 0; i < lessons.length; i++) {
         const l = lessons[i];
+        if (!l || !l.title) continue; // Skip invalid lessons
+        
         const prereqs = (l.prerequisites || '').split(',').map(p => p.trim().toLowerCase()).filter(Boolean);
         if (prereqs.length === 0 || prereqs.every(p => added.has(p) || !lessonTitles.includes(p))) {
           toAdd.push(i);
         }
       }
+      
       if (toAdd.length === 0) {
         // Circular or missing prerequisites, add the rest
-        sorted.push(...lessons);
+        sorted.push(...lessons.filter(l => l && l.title));
         break;
       }
+      
       // Add all eligible lessons this round
       for (let j = toAdd.length - 1; j >= 0; j--) {
         const idx = toAdd[j];
         const l = lessons[idx];
+        if (!l || !l.title) continue; // Skip invalid lessons
+        
         sorted.push(l);
         added.add(l.title.trim().toLowerCase());
         lessons.splice(idx, 1);
         addedThisRound = true;
       }
+      
       if (!addedThisRound) break;
     }
-    const updatedModules = [...modules];
-    updatedModules[moduleIdx].lessons = sorted;
-    setModules(updatedModules);
+    
+    try {
+      const updatedModule = await updateModule(module._id, {
+        ...module,
+        lessons: sorted.map(l => l._id)
+      });
+      const updatedModules = [...modules];
+      updatedModules[moduleIdx] = updatedModule;
+      setModules(updatedModules);
+    } catch (error) {
+      console.error('Failed to update lesson order:', error);
+      alert('Failed to update lesson order.');
+    }
   };
 
   return (

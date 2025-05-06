@@ -1,73 +1,74 @@
-# Getting Started with Create React App
+# CourseGPT
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+CourseGPT is a full-stack web application for generating, organizing, and managing educational course modules and lessons using AI (Google Gemini API). It features a modern React frontend and an Express/MongoDB backend.
 
-## Environment Variables Setup
+## Features
+- Generate lesson content using Google Gemini API
+- Edit lesson sections before saving
+- Organize lessons into modules
+- Suggest lesson order based on prerequisites
+- View, add, and manage modules and lessons
+- Responsive, modern UI
 
-This project requires a Gemini API key to function. Follow these steps to set up your environment:
+## Tech Stack
+- **Frontend:** React, React Router, React Quill, Axios
+- **Backend:** Node.js, Express, MongoDB (Mongoose), dotenv, cors
+- **AI Integration:** Google Gemini API
 
-1. Create a `.env` file in the root directory of the project
-2. Add the following line to the `.env` file:
-   ```
-   REACT_APP_GEMINI_API_KEY=AIzaSyDfTk52veSZ696lw1Hne0a4HD0oC1bq7BE
-   ```
-3. Restart your development server after adding the environment variable
+## Setup Instructions
 
-Note: The `.env` file is already included in `.gitignore` to prevent exposing your API key. Never commit this file to version control.
-
-## Installation
-
-First, install all dependencies by running:
-
+### 1. Clone the Repository
+```bash
+git clone <your-repo-url>
+cd coursegpt
 ```
+
+### 2. Backend Setup
+```bash
+cd server
 npm install
 ```
 
-or, if you use yarn:
-
+Create a `.env` file in the `server` directory with:
 ```
-yarn install
+MONGODB_URI=mongodb://localhost:27017/coursegpt
+PORT=5000
+GEMINI_API_KEY=your_gemini_api_key
+```
+- Replace `your_gemini_api_key` with your actual Gemini API key ([get one here](https://makersuite.google.com/app/apikey)).
+
+Start MongoDB (if not already running), then start the backend:
+```bash
+npm start
 ```
 
-## Available Scripts
+### 3. Frontend Setup
+Open a new terminal in the project root:
+```bash
+npm install
+npm start
+```
+The app will open at [http://localhost:3000](http://localhost:3000)
 
-In the project directory, you can run:
+## Usage
+1. Generate a lesson by entering a topic and lesson name, then click "Generate Lesson".
+2. Edit any section of the lesson as needed.
+3. Select a module and click "Add Lesson to Module" to save.
+4. View and organize modules and lessons from the "Modules" page.
+5. Use "Suggest Lesson Order" to reorder lessons based on prerequisites.
 
-### `npm start`
+## API Endpoints (Backend)
+- `GET /api/modules` — List all modules (with lessons)
+- `POST /api/modules` — Create a new module
+- `PUT /api/modules/:id` — Update a module (including lesson order)
+- `DELETE /api/modules/:id` — Delete a module
+- `GET /api/lessons` — List all lessons
+- `POST /api/lessons` — Create a new lesson
+- `PUT /api/lessons/:id` — Update a lesson
+- `DELETE /api/lessons/:id` — Delete a lesson
+- `POST /api/lessons/generate` — Generate lesson content using Gemini API
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
-
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
-
-### `npm test`
-
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
-
-### `npm run build`
-
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
-
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
+## Environment Variables
+- `MONGODB_URI` — MongoDB connection string
+- `PORT` — Backend server port (default: 5000)
+- `GEMINI_API_KEY` — Your Google Gemini API key
