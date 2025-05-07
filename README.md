@@ -3,11 +3,9 @@
 CourseGPT is a full-stack web application for generating, organizing, and managing educational course modules and lessons using AI (Google Gemini API). It features a modern React frontend and an Express/MongoDB backend.
 
 ## 🚀 Live Demo
-- **Frontend (Netlify):** [https://your-app-name.netlify.app](https://your-app-name.netlify.app)
-- **Backend API (Render):** [https://your-backend-name.onrender.com/api/modules](https://your-backend-name.onrender.com/api/modules)
-- **Source Code:** [https://github.com/yourusername/coursegpt](https://github.com/yourusername/coursegpt)
+- **Frontend (Netlify):** [https://inspiring-puppy-e3e881.netlify.app/]
+- **Backend API (Render):** [https://coursegpt-server.onrender.com/api/modules]
 
-> _Replace the above links with your actual deployed URLs and GitHub repo._
 
 ## Features
 - Generate lesson content using Google Gemini API
@@ -23,7 +21,7 @@ CourseGPT is a full-stack web application for generating, organizing, and managi
 - **AI Integration:** Google Gemini API
 
 ## How to Use (Deployed App)
-1. Visit the [Live Demo](https://your-app-name.netlify.app) link.
+1. Visit the [Live Demo](https://inspiring-puppy-e3e881.netlify.app/) link.
 2. Generate a lesson by entering a topic and lesson name, then click "Generate Lesson".
 3. Edit any section of the lesson as needed.
 4. Select a module and click "Add Lesson to Module" to save.
@@ -34,7 +32,7 @@ CourseGPT is a full-stack web application for generating, organizing, and managi
 
 ### 1. Clone the Repository
 ```bash
-git clone <your-repo-url>
+git clone <repo-url>
 cd coursegpt
 ```
 
